@@ -30,76 +30,51 @@ class TaskInfoProjection (
         fun init() {
             subscriptionsManager.createSubscriber(ProjectAggregate::class, "taskInformation::task-information-cache") {
                 `when`(TaskCreatedEvent::class) { event ->
-                    val bdTaskInfo = withContext(Dispatchers.IO) {
-                        taskInfoRepository.findById(event.taskId)
-                    }
-                    var taskInfo = TaskInfo(event.taskId, event.taskName)
-                    if (!bdTaskInfo.isEmpty)
-                        taskInfo = bdTaskInfo.get()
-                    withContext(Dispatchers.IO) {
-                        taskInfoRepository.save(taskInfo)
-                    }
+                    var taskInfo = taskInfoRepository.findByIdOrNull(event.taskId)
+                    if (taskInfo == null)
+                        taskInfo = TaskInfo(event.taskId, event.taskName)
+                    taskInfoRepository.save(taskInfo)
+
                     logger.info("Update task information projection, create task ${event.taskId}")
                 }
                 `when`(TagAssignedToTaskEvent::class) { event ->
-                    val bdTaskInfo = withContext(Dispatchers.IO) {
-                        taskInfoRepository.findById(event.taskId)
-                    }
-                    val project = projectEsService.getState(event.projectId)
-                    var taskName = ""
-                    if (project != null) {
-                        val task = project.tasks[event.taskId]
-                        if (task != null)
-                            taskName = task.name
-                    }
-                    var taskInfo = TaskInfo(event.taskId, taskName)
-                    if (!bdTaskInfo.isEmpty)
-                        taskInfo = bdTaskInfo.get()
-                    if (project != null) {
-                        val tag = project.projectTags[event.tagId]
-                        if (tag != null) {
-                            taskInfo.tag[event.tagId] = TagInfo(event.tagId, tag.name, tag.color)
-                        }
-                    }
-                    withContext(Dispatchers.IO) {
-                        taskInfoRepository.save(taskInfo)
-                    }
+                    var taskInfo = taskInfoRepository.findByIdOrNull(event.taskId)
+
+                    val project = projectEsService.getState(event.projectId) ?: throw Exception()
+                    val task = project.tasks[event.taskId] ?: throw Exception()
+
+                    val tag = project.projectTags[event.tagId] ?: throw Exception()
+                    if (taskInfo == null)
+                        taskInfo = TaskInfo(event.taskId, task.name)
+                    taskInfo!!.tag[event.tagId] = TagInfo(event.tagId, tag.name, tag.color)
+
+                    taskInfoRepository.save(taskInfo!!)
                     logger.info("Update task information projection, assign tag to task ${event.tagId}-${event.taskId}")
                 }
                 `when`(TaskRenamedEvent::class) { event ->
-                    val bdTaskInfo = withContext(Dispatchers.IO) {
-                        taskInfoRepository.findById(event.taskId)
-                    }
-                    var taskInfo = TaskInfo(event.taskId, event.taskName)
-                    if (!bdTaskInfo.isEmpty)
-                        taskInfo = bdTaskInfo.get()
-                    taskInfo.name = event.taskName
-                    withContext(Dispatchers.IO) {
-                        taskInfoRepository.save(taskInfo)
-                    }
+                    var taskInfo = taskInfoRepository.findByIdOrNull(event.taskId)
+                    if (taskInfo == null)
+                        taskInfo = TaskInfo(event.taskId, event.taskName)
+                    taskInfo!!.name = event.taskName
+                    taskInfoRepository.save(taskInfo!!)
+
                     logger.info("Update task information projection, task name change ${event.taskId}-${event.taskName}")
                 }
                 `when`(UserAssignedToTaskEvent::class) { event ->
-                    val bdTaskInfo = withContext(Dispatchers.IO) {
-                        taskInfoRepository.findById(event.taskId)
-                    }
-                    val project = projectEsService.getState(event.projectId)
-                    var taskName = ""
-                    if (project != null) {
-                        val task = project.tasks[event.taskId]
-                        if (task != null)
-                            taskName = task.name
-                    }
-                    var taskInfo = TaskInfo(event.taskId, taskName)
-                    if (!bdTaskInfo.isEmpty)
-                        taskInfo = bdTaskInfo.get()
+                    var taskInfo = taskInfoRepository.findByIdOrNull(event.taskId)
+
+                    val project = projectEsService.getState(event.projectId) ?: throw Exception()
+                    val task = project.tasks[event.taskId] ?: throw Exception()
+
+                    if (taskInfo == null)
+                        taskInfo = TaskInfo(event.taskId, task.name)
 
                     val user = userEsService.getState(event.userId)
                     if (user != null) {
-                        taskInfo.performers[event.userId] = TaskPerformer(event.userId, user.name)
+                        taskInfo!!.performers[event.userId] = TaskPerformer(event.userId, user.name)
                     }
                     withContext(Dispatchers.IO) {
-                        taskInfoRepository.save(taskInfo)
+                        taskInfoRepository.save(taskInfo!!)
                     }
                     logger.info("Update task information projection, assign user to task ${event.userId}-${event.taskId}")
                 }

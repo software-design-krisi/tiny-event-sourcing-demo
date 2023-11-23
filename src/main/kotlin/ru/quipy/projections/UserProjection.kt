@@ -37,7 +37,7 @@ class UserProjection (
     }
 
     fun login(nickname: String, password: String) : User {
-        val user = userRepository.findAll().single{ x -> x.nickname == nickname} ?: throw Exception("Invalid nickname")
+        val user = getByNickname(nickname) ?: throw Exception("Invalid nickname")
         val userAggregate = userEsService.getState(user.userId) ?: throw Exception("Fail to get aggregate")
         if (userAggregate.password == password)
             return user
@@ -56,7 +56,7 @@ class UserProjection (
     fun getByNickname(nickname: String) : User? {
         val users = userRepository.findAll()
         if (users.isNotEmpty())
-            return users.single{x -> x.nickname == nickname}
+            return users.singleOrNull{x -> x.nickname == nickname}
         return null
     }
 }

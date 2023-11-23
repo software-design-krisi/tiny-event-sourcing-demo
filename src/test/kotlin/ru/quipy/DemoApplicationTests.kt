@@ -31,8 +31,8 @@ class DemoApplicationTests  {
 	@Autowired
 	private lateinit var userEsService: EventSourcingService<UUID, UserAggregate, UserAggregateState>
 
-//	@Autowired
-//	lateinit var mongoTemplate: MongoTemplate
+	@Autowired
+	lateinit var mongoTemplate: MongoTemplate
 
 	@Test
 	@Order(1)
@@ -177,7 +177,6 @@ class DemoApplicationTests  {
 
 	@Test
 	fun  assignUserNotFromProjectToTask() {
-
 		Assertions.assertThrows(Exception::class.java) {
 			projectEsService.update(projectId) {
 				it.assignUserToTask(taskId, user2Id)

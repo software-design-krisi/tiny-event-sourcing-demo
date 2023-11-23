@@ -18,7 +18,7 @@ class UserEventsSubscriber {
 
     @PostConstruct
     fun init() {
-        subscriptionsManager.createSubscriber(UserAggregate::class, "user") {
+        subscriptionsManager.createSubscriber(UserAggregate::class, "users::user") {
 
             `when`(UserCreatedEvent::class) { event ->
                 logger.info("User created: {}", event.userName)
