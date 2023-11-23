@@ -13,7 +13,8 @@ class ProjectController(
     val projectEsService: EventSourcingService<UUID, ProjectAggregate, ProjectAggregateState>,
     val userProjection: UserProjection,
     val projectMembersProjection: ProjectMembersProjection,
-    val taskInfoProjection: TaskInfoProjection
+    val taskInfoProjection: TaskInfoProjection,
+    val tasksProjection: TasksProjection
 ) {
 
     @PostMapping
@@ -71,6 +72,11 @@ class ProjectController(
         return projectEsService.update(projectId) {
             it.addTask(UUID.randomUUID(), taskName)
         }
+    }
+
+    @GetMapping("/{projectId}/tasks")
+    fun GetTasksByProjectId(@PathVariable projectId: UUID) : List<Task> {
+        return tasksProjection.getTasksByProjectId(projectId)
     }
 
     @GetMapping("/task/{taskId}")
