@@ -14,7 +14,8 @@ class ProjectController(
     val userProjection: UserProjection,
     val projectMembersProjection: ProjectMembersProjection,
     val taskInfoProjection: TaskInfoProjection,
-    val tasksProjection: TasksProjection
+    val tasksProjection: TasksProjection,
+    val projectTagsProjection: ProjectTagsProjection
 ) {
 
     @PostMapping
@@ -79,7 +80,13 @@ class ProjectController(
         return tasksProjection.getTasksByProjectId(projectId)
     }
 
-    @GetMapping("/task/{taskId}")
+
+    @GetMapping("/{projectId}/tags")
+    fun GetTagsByProject(@PathVariable projectId: UUID) : ProjectTags? {
+        return projectTagsProjection.getById(projectId)
+    }
+
+            @GetMapping("/task/{taskId}")
     @RequestMapping("/task/{taskId}")
     fun getTaskInfo(@PathVariable taskId: UUID) : TaskInfo? {
         return taskInfoProjection.getById(taskId)

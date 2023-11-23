@@ -120,13 +120,13 @@ data class TaskInfo(
 )
 
 data class TagInfo(
-        val statusId: UUID,
+        val tagId: UUID,
         var name: String,
         var color: String
 )
 
 data class TaskPerformer(
-        val statusId: UUID,
+        val userId: UUID,
         var name: String
 )
 
