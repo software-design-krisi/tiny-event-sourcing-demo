@@ -12,34 +12,28 @@ import java.util.*
 @RestController
 @RequestMapping("/users")
 class UserController (val userEsService: EventSourcingService<UUID, UserAggregate, UserAggregateState>,
-                      val userRepository: UserRepository,
-                      val userProjectsRepository: UserProjectsRepository
+                val userProjection: UserProjection,
+                val userProjectsProjection: UserProjectsProjection
 ) {
-    @PostMapping()
+    @PostMapping
     fun createUser(@RequestParam name: String, @RequestParam nickname: String, @RequestParam password: String) : UserCreatedEvent {
-        val users = userRepository.findAll()
-        if (users.isNotEmpty() && users.single{x -> x.nickname == nickname} != null)
-            throw Exception("User with nickname ${nickname} already exists")
+        if (userProjection.getByNickname(nickname) != null)
+            throw Exception("User with nickname $nickname already exists")
         return userEsService.create{ it.create(UUID.randomUUID(), name, nickname, password) }
     }
 
     @PostMapping("login")
     fun login(@RequestParam nickname: String, @RequestParam password: String) : User {
-        val user = userRepository.findAll().single{ x -> x.nickname == nickname} ?: throw Exception("Invalid nickname")
-        val userAggregate = userEsService.getState(user.userId) ?: throw Exception("Fail to get aggregate")
-        if (userAggregate.password == password)
-            return user
-        else
-            throw Exception("Invalid password")
+        return userProjection.login(nickname, password)
     }
 
     @GetMapping("/all")
     fun getUsers() : List<User> {
-        return userRepository.findAll()
+        return userProjection.getAll()
     }
 
     @GetMapping("/{userId}/projects")
-    fun getUserProject(@PathVariable userId: UUID) : UserProjects {
-        return userProjectsRepository.findById(userId).get()
+    fun getUserProject(@PathVariable userId: UUID) : UserProjects? {
+        return userProjectsProjection.getById(userId)
     }
 }

@@ -1,6 +1,5 @@
 package ru.quipy.controller
 
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.web.bind.annotation.*
 import ru.quipy.api.*
 import ru.quipy.core.EventSourcingService
@@ -12,14 +11,14 @@ import java.util.*
 @RequestMapping("/projects")
 class ProjectController(
     val projectEsService: EventSourcingService<UUID, ProjectAggregate, ProjectAggregateState>,
-    val userRepository: UserRepository,
-    val projectMembersRepository: ProjectMembersRepository,
-    val taskInfoRepo: TaskInfoRepository
+    val userProjection: UserProjection,
+    val projectMembersProjection: ProjectMembersProjection,
+    val taskInfoProjection: TaskInfoProjection
 ) {
 
-    @PostMapping()
+    @PostMapping
     fun createProject(@RequestParam projectTitle: String, @RequestParam creatorId: UUID) : ProjectAggregateState? {
-        userRepository.findByIdOrNull(creatorId) ?: throw Exception("Invalid сreator id ${creatorId}")
+        userProjection.getById(creatorId) ?: throw Exception("Invalid creator id $creatorId")
         val project = projectEsService.create { it.create(UUID.randomUUID(), projectTitle, creatorId) }
 
         projectEsService.update(project.projectId) {
@@ -36,34 +35,22 @@ class ProjectController(
 
     @GetMapping("/all")
     fun getAllProjects() : List<ProjectMembers> {
-        return projectMembersRepository.findAll()
+        return projectMembersProjection.getAll()
     }
 
     @GetMapping("/{projectId}/members")
     fun getProjectMembers(@PathVariable projectId: UUID) : List<User> {
-        val projectMembers = projectMembersRepository.findByIdOrNull(projectId)
-            ?: throw Exception("Invalid project id ${projectId}")
-        val users = userRepository.findAll()
-        users.removeAll { x -> !projectMembers.users.contains(x.userId)}
-        return users
+        return projectMembersProjection.getProjectMembers(projectId)
     }
 
     @GetMapping("/{projectId}/users-to-add")
     fun getAllUsersToAdd(@PathVariable projectId: UUID) : List<User> {
-        val projectMembers = projectMembersRepository.findByIdOrNull(projectId)
-            ?: throw Exception("Invalid project id ${projectId}")
-        val users = userRepository.findAll()
-        users.removeAll { x -> projectMembers.users.contains(x.userId)}
-        return users
+        return projectMembersProjection.getAllUsersToAdd(projectId)
     }
 
     @GetMapping("/{projectId}/users-to-add/{input}")
     fun findUsersToAdd(@PathVariable projectId: UUID, @PathVariable input: String) : List<User> {
-        val projectMembers = projectMembersRepository.findByIdOrNull(projectId)
-            ?: throw Exception("Invalid project id ${projectId}")
-        val users = userRepository.findAll()
-        users.removeAll { x -> projectMembers.users.contains(x.userId) || (!x.nickname.contains(input) && !x.name.contains(input))}
-        return users
+        return projectMembersProjection.getUsersToAdd(projectId, input)
     }
 
     @PostMapping("/{projectId}/tags")
@@ -88,8 +75,8 @@ class ProjectController(
 
     @GetMapping("/task/{taskId}")
     @RequestMapping("/task/{taskId}")
-    fun getTaskInfo(@PathVariable taskId: UUID) : TaskInfo {
-        return taskInfoRepo.findById(taskId).get()
+    fun getTaskInfo(@PathVariable taskId: UUID) : TaskInfo? {
+        return taskInfoProjection.getById(taskId)
     }
 
     @PutMapping("/{projectId}/tasks/{taskId}")
@@ -108,7 +95,7 @@ class ProjectController(
 
     @PostMapping("/{projectId}/user/{userId}")
     fun addUser(@PathVariable projectId: UUID, @PathVariable userId: UUID) : UserAddedEvent {
-        userRepository.findByIdOrNull(userId) ?: throw Exception("Invalid user id ${userId}")
+        userProjection.getById(userId) ?: throw Exception("Invalid user id $userId")
         return projectEsService.update(projectId) {
             it.addUser(userId)
         }

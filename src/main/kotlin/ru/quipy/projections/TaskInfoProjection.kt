@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.mongodb.repository.MongoRepository
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 import ru.quipy.api.*
@@ -104,6 +105,9 @@ class TaskInfoProjection (
                 }
             }
         }
+    fun getById(taskId: UUID) : TaskInfo? {
+        return taskInfoRepository.findByIdOrNull(taskId)
+    }
 }
 
 @Document("task-information-projection")

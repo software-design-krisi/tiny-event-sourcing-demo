@@ -17,7 +17,8 @@ import javax.annotation.PostConstruct
 @Component
 class ProjectMembersProjection (
     private val projectMembersRepository: ProjectMembersRepository,
-    private val subscriptionsManager: AggregateSubscriptionsManager
+    private val subscriptionsManager: AggregateSubscriptionsManager,
+    private val userProjection: UserProjection
 ){
     private val logger = LoggerFactory.getLogger(ProjectMembersProjection::class.java)
 
@@ -40,6 +41,28 @@ class ProjectMembersProjection (
             projectMembers = ProjectMembers(projectId)
         projectMembers.users.add(userId)
         projectMembersRepository.save(projectMembers)
+    }
+
+    fun getAll() : List<ProjectMembers>{
+        return projectMembersRepository.findAll()
+    }
+
+    fun getProjectMembers(projectId: UUID) : List<User>{
+        val projectMembers = projectMembersRepository.findByIdOrNull(projectId)
+            ?: throw Exception("Invalid project id $projectId")
+        return userProjection.getAll().filter { x -> projectMembers.users.contains(x.userId)}
+    }
+
+    fun getAllUsersToAdd(projectId: UUID) : List<User> {
+        val projectMembers = projectMembersRepository.findByIdOrNull(projectId)
+            ?: throw Exception("Invalid project id $projectId")
+        return userProjection.getAll().filter { x -> !projectMembers.users.contains(x.userId)}
+    }
+
+    fun getUsersToAdd(projectId: UUID, input: String) : List<User> {
+        val projectMembers = projectMembersRepository.findByIdOrNull(projectId)
+            ?: throw Exception("Invalid project id $projectId")
+        return userProjection.getAll().filter { x -> !projectMembers.users.contains(x.userId) && (x.nickname.contains(input) || x.name.contains(input))}
     }
 }
 

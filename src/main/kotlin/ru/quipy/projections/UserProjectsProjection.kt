@@ -47,6 +47,10 @@ class UserProjectsProjection (
         userProjects.projects[projectId] = Project(projectId, projectName)
         userProjectsRepository.save(userProjects)
     }
+
+    fun getById(id: UUID) : UserProjects? {
+        return userProjectsRepository.findByIdOrNull(id)
+    }
 }
 
 @Document("user-projects-projection")
